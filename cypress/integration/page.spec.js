@@ -514,7 +514,7 @@ describe('', () => {
   });
 
   // Sorter tests are skiped by default
-  describe.skip('Sorter', () => {
+  describe('Sorter', () => {
     it('should show all sort icons in default state', () => {
       cy.get('[data-cy="SortIcon"].fa-sort').should('have.length', 4);
       cy.get('[data-cy="SortIcon"].fa-sort-up').should('not.exist');

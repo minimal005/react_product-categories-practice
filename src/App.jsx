@@ -8,6 +8,8 @@ import usersFromServer from './api/users';
 import categoriesFromServer from './api/categories';
 import productsFromServer from './api/products';
 
+// eslint-disable-next-line camelcase
+const sortByField = ['ID', 'Product', 'Category', 'User'];
 const products = productsFromServer.map(product => {
   const category = categoriesFromServer.find(
     oneCategory => product.categoryId === oneCategory.id,
@@ -20,10 +22,16 @@ const products = productsFromServer.map(product => {
   return { ...product, category, owner: user };
 });
 
-const filterProductByName = (productsList, params) => {
-  const { selectedOwner, selectedCategory, query } = params;
+const filterandSortedProduct = (productsList, params) => {
+  const {
+    selectedOwner,
+    selectedCategory,
+    query,
+    sortedByField,
+    showListProducts,
+  } = params;
 
-  const preparedProducts = productsList
+  const filteredProduct = productsList
     .filter(product =>
       product.name.toLowerCase().includes(query.toLowerCase().trim()),
     )
@@ -38,18 +46,50 @@ const filterProductByName = (productsList, params) => {
       return selectedCategory.includes(product.category.title);
     });
 
-  return preparedProducts || null;
+  const sortedProduct = filteredProduct.toSorted((product1, product2) => {
+    if (sortedByField === 'ID') {
+      return product1.id - product2.id;
+    }
+
+    if (sortedByField === 'Product') {
+      return product1.name.localeCompare(product2.name);
+    }
+
+    if (sortedByField === 'Category') {
+      return product1.category.title.localeCompare(product2.category.title);
+    }
+
+    if (sortedByField === 'User') {
+      return product1.owner.name.localeCompare(product2.owner.name);
+    }
+
+    return 0;
+  });
+
+  if (showListProducts === 'desc') {
+    return sortedProduct.toReversed();
+  }
+
+  if (showListProducts === '') {
+    return filteredProduct;
+  }
+
+  return sortedProduct || null;
 };
 
 export const App = () => {
   const [selectedOwner, setSelectedOwner] = useState('All'); // All, Roma, Anna, Max, John
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState([]); // allCategory
+  const [sortedByField, setSortedByField] = useState(''); // '', ID, product, category, user
+  const [showListProducts, setShowListProducts] = useState(''); // asc, desc
 
-  const filterProducts = filterProductByName(products, {
+  const filterProducts = filterandSortedProduct(products, {
     selectedOwner,
     selectedCategory,
     query,
+    sortedByField,
+    showListProducts,
   });
 
   const onSelectedCategory = categoryTitle => {
@@ -59,6 +99,28 @@ export const App = () => {
       );
     } else {
       setSelectedCategory([...selectedCategory, categoryTitle]);
+    }
+  };
+
+  const onSorted = field => {
+    if (field !== sortedByField && showListProducts !== '') {
+      setShowListProducts('asc');
+      setSortedByField(field);
+    }
+
+    if (field !== sortedByField && showListProducts === '') {
+      setShowListProducts('asc');
+      setSortedByField(field);
+    }
+
+    if (field === sortedByField && showListProducts === 'asc') {
+      setShowListProducts('desc');
+      setSortedByField(field);
+    }
+
+    if (field === sortedByField && showListProducts === 'desc') {
+      setShowListProducts('');
+      setSortedByField('');
     }
   };
 
@@ -181,49 +243,32 @@ export const App = () => {
             >
               <thead>
                 <tr>
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      ID
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Product
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-down" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      Category
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort-up" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
-
-                  <th>
-                    <span className="is-flex is-flex-wrap-nowrap">
-                      User
-                      <a href="#/">
-                        <span className="icon">
-                          <i data-cy="SortIcon" className="fas fa-sort" />
-                        </span>
-                      </a>
-                    </span>
-                  </th>
+                  {sortByField.map(field => (
+                    <th key={field}>
+                      <span className="is-flex is-flex-wrap-nowrap">
+                        {field}
+                        <a href="#/" onClick={() => onSorted(field)}>
+                          <span className="icon">
+                            <i
+                              data-cy="SortIcon"
+                              className={cn('fas ', {
+                                'fa-sort':
+                                  sortedByField !== field ||
+                                  (sortedByField === field &&
+                                    showListProducts === ''),
+                                'fa-sort-up':
+                                  showListProducts === 'asc' &&
+                                  sortedByField === field,
+                                'fa-sort-down':
+                                  showListProducts === 'desc' &&
+                                  sortedByField === field,
+                              })}
+                            />
+                          </span>
+                        </a>
+                      </span>
+                    </th>
+                  ))}
                 </tr>
               </thead>
 
