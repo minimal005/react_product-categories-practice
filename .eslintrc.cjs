@@ -1,3 +1,4 @@
+// eslint-disable-next-line prettier/prettier
 module.exports = {
   env: {
     browser: true,
